@@ -1,14 +1,18 @@
-const { Schema, model } = require('mongoose');
+const { Schema, model, Types } = require('mongoose');
 const dateFormat = require('../utils/dateFormat');
 
-const PizzaSchema = new Schema(
+const ReplySchema = new Schema(
   {
-    pizzaName: {
-      type: String,
-      required: true,
-      trim: true
+    // set custom id to avoid confusion with parent comment _id
+    replyId: {
+      type: Schema.Types.ObjectId,
+      default: () => new Types.ObjectId()
     },
-    createdBy: {
+    replyBody: {
+      type: String,
+      required: true
+    },
+    writtenBy: {
       type: String,
       required: true,
       trim: true
@@ -17,42 +21,50 @@ const PizzaSchema = new Schema(
       type: Date,
       default: Date.now,
       get: createdAtVal => dateFormat(createdAtVal)
-    },
-    size: {
+    }
+  },
+  {
+    toJSON: {
+      getters: true
+    }
+  }
+);
+
+const CommentSchema = new Schema(
+  {
+    writtenBy: {
       type: String,
-      required: true,
-      enum: ['Personal', 'Small', 'Medium', 'Large', 'Extra Large'],
-      default: 'Large'
+      required: true
     },
-    toppings: [],
-    comments: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: 'Comment'
-      }
-    ]
+    commentBody: {
+      type: String,
+      required: true
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+      get: createdAtVal => dateFormat(createdAtVal)
+    },
+    // use ReplySchema to validate data for a reply
+    replies: [ReplySchema]
   },
   {
     toJSON: {
       virtuals: true,
       getters: true
     },
-    // prevents virtuals from creating duplicate of _id as `id`
     id: false
   }
 );
 
-// get total count of comments and replies on retrieval
-PizzaSchema.virtual('commentCount').get(function() {
-  return this.comments.reduce(
-    (total, comment) => total + comment.replies.length + 1,
-    0
-  );
+CommentSchema.virtual('replyCount').get(function() {
+  return this.replies.length;
 });
 
-const Pizza = model('Pizza', PizzaSchema);
+const Comment = model('Comment', CommentSchema);
 
-module.exports = Pizza;
+module.exports = Comment;
+
 
 
 
