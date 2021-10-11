@@ -21,4 +21,3 @@ router
   .delete(deletePizza);
 
 module.exports = router;
-
