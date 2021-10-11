@@ -1,64 +1,59 @@
-const { Schema, model, Types } = require('mongoose');
+const { Schema, model } = require('mongoose');
 const dateFormat = require('../utils/dateFormat');
 
-const ReplySchema = new Schema(
+const PizzaSchema = new Schema(
   {
-    // set custom id to avoid confusion with parent comment _id
-    replyId: {
-      type: Schema.Types.ObjectId,
-      default: () => new Types.ObjectId()
+    pizzaName: {
+      type: String,
+      required: true,
+      trim: true
     },
-    replyBody: {
-      type: String
-    },
-    writtenBy: {
-      type: String
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now,
-      get: createdAtVal => dateFormat(createdAtVal)
-    }
-  },
-  {
-    toJSON: {
-      getters: true
-    }
-  }
-);
-
-const CommentSchema = new Schema(
-  {
-    writtenBy: {
-      type: String
-    },
-    commentBody: {
-      type: String
+    createdBy: {
+      type: String,
+      required: true,
+      trim: true
     },
     createdAt: {
       type: Date,
       default: Date.now,
       get: createdAtVal => dateFormat(createdAtVal)
     },
-    // use ReplySchema to validate data for a reply
-    replies: [ReplySchema]
+    size: {
+      type: String,
+      required: true,
+      enum: ['Personal', 'Small', 'Medium', 'Large', 'Extra Large'],
+      default: 'Large'
+    },
+    toppings: [],
+    comments: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Comment'
+      }
+    ]
   },
   {
     toJSON: {
       virtuals: true,
       getters: true
     },
+    // prevents virtuals from creating duplicate of _id as `id`
     id: false
   }
 );
 
-CommentSchema.virtual('replyCount').get(function() {
-  return this.replies.length;
+// get total count of comments and replies on retrieval
+PizzaSchema.virtual('commentCount').get(function() {
+  return this.comments.reduce(
+    (total, comment) => total + comment.replies.length + 1,
+    0
+  );
 });
 
-const Comment = model('Comment', CommentSchema);
+const Pizza = model('Pizza', PizzaSchema);
 
-module.exports = Comment;
+module.exports = Pizza;
+
 
 
 
